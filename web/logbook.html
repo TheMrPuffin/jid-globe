@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#070d1c" />
+    <title>JID Globe · Logbook</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <script>
+      // Adding ?kiosk to the address hides the links to other pages (see the README).
+      // This runs before the page is drawn, so the links never flash up.
+      if (new URLSearchParams(location.search).has('kiosk')) document.documentElement.classList.add('kiosk');
+    </script>
+  </head>
+  <body class="page">
+    <header class="page-header">
+      <h1>JID Globe <span>Logbook</span></h1>
+      <nav>
+        <a href="/">Globe</a>
+        <a href="/stats">Stats</a>
+        <a href="/logbook" aria-current="page">Logbook</a>
+        <a href="/submit">Submit</a>
+      </nav>
+      <dl id="stats" class="stats">
+        <div><dt>JIDs</dt><dd id="stat-total">0</dd></div>
+        <div><dt>Countries</dt><dd id="stat-countries">0</dd></div>
+        <div><dt>Regions</dt><dd id="stat-regions">0/7</dd></div>
+      </dl>
+      <div id="live" class="live" data-state="connecting">Connecting…</div>
+    </header>
+
+    <main class="feed-page">
+      <!-- Pick a station, a region, a country, or a mix, to see only those entries. -->
+      <div id="feed-filter" class="feed-filter" hidden>
+        <span class="feed-filter-label">Show</span>
+        <select id="feed-station" aria-label="Station"></select>
+        <select id="feed-region" aria-label="Region"></select>
+        <select id="feed-country" aria-label="Country"></select>
+        <button id="feed-clear" type="button" class="secondary feed-clear" hidden>Clear filters</button>
+        <span id="feed-summary" class="feed-summary" hidden></span>
+      </div>
+      <ul id="feed" class="feed" aria-live="polite"></ul>
+      <p id="feed-empty" class="message hint" hidden></p>
+      <div class="feed-buttons">
+        <button id="feed-more" type="button" class="secondary" hidden>Show more</button>
+        <button id="feed-less" type="button" class="secondary" hidden>Back to just the latest 150</button>
+      </div>
+    </main>
+
+    <footer class="page-footer">
+      <a id="kiosk-link" href="?kiosk" class="page-link" title="Hide the links to other pages on this screen">Kiosk mode</a>
+      <button id="about-link" type="button" class="link-button" title="Who made this, and whose data it uses">About</button>
+    </footer>
+
+    <script type="module" src="/src/logbook-page.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,73 @@
+# Runs on every pull request and on every change to main. It answers one question:
+# "is this code safe to merge?" Nothing is published from here.
+#
+# It uses the same `make` shortcuts as the README, so what passes on your own machine
+# is what passes here.
+name: Checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  # Adds a "Run workflow" button on the Actions page, for running it by hand.
+  workflow_dispatch:
+  # Lets the release workflow run these same checks before it publishes anything.
+  workflow_call:
+
+# This workflow only needs to read the code.
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the run for the older one.
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests and build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      # Actions are pinned to an exact commit, with the version it belongs to alongside.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Use the same Node.js version as the Dockerfile, so there is one place to change it
+      # (and Dependabot, which updates the Dockerfile, updates this with it).
+      - name: Read the Node.js version from the Dockerfile
+        id: node
+        # Written as a block (the "|") because the command has a colon in it, which
+        # YAML would otherwise read as part of its own syntax.
+        run: |
+          echo "version=$(grep -m1 -oE '^FROM node:[0-9.]+' Dockerfile | cut -d: -f2)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ steps.node.outputs.version }}
+          cache: npm
+      # `npm ci` installs exactly what package-lock.json says, and fails if it disagrees
+      # with package.json.
+      - run: npm ci
+      - run: make test
+      # Also type-checks the code.
+      - run: make build
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: make image
+      # Start the app from the image just built, the way the README says to, and wait
+      # until its own health check passes.
+      - name: Start the app
+        run: |
+          cp .env.example .env
+          docker compose up -d --wait --wait-timeout 60
+      - name: Check it answers
+        run: |
+          curl --fail --silent --show-error http://localhost:8080/api/health
+          curl --fail --silent --show-error --output /dev/null http://localhost:8080/
+          curl --fail --silent --show-error --output /dev/null http://localhost:8080/stats
+      - name: Show the app's log if anything failed
+        if: failure()
+        run: docker compose logs

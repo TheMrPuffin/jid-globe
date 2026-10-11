@@ -1,0 +1,62 @@
+# Looks for known security problems in the Docker image, once a week and on demand.
+#
+# The image contains a small Linux system and a set of packages. Problems are found in
+# those all the time, long after the code here last changed, so the image has to be
+# checked on a timetable rather than only when something is merged.
+#
+# It checks two images:
+#   - a fresh build of the current code. If this fails, something needs updating:
+#     merge the open Dependabot pull requests, or wait for a fix to be released.
+#   - the published image that people are actually running. If only this one fails,
+#     the fix is already here and it is time to make a release.
+#
+# Only problems that have a fix available, and are rated High or Critical, fail the run.
+# GitHub emails you when a scheduled run fails.
+name: Security scan
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Mondays at 06:00 UTC
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  fresh:
+    name: Fresh build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # --pull and --no-cache make this a completely new build, so it gets today's
+      # version of the Node.js image and today's Debian fixes.
+      - name: Build the image from scratch
+        run: docker compose build --pull --no-cache
+      - run: make scan
+
+  published:
+    name: Published image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: read # to download the image
+    env:
+      IMAGE: ghcr.io/themrpuffin/jid-globe:latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download the published image
+        id: pull
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "$TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+          if docker pull "$IMAGE"; then
+            echo "found=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No published image yet, so there is nothing to scan."
+          fi
+      - if: steps.pull.outputs.found == 'yes'
+        run: make scan IMAGE="$IMAGE"

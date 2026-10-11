@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    image: jid-globe:local
+    env_file: .env
+    ports:
+      - "${PORT:-8080}:${PORT:-8080}"
+    volumes:
+      - jid-data:/data
+    restart: unless-stopped
+
+volumes:
+  jid-data:

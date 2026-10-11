@@ -1,0 +1,124 @@
+# Publishes a release. It runs when a version tag such as v1.0.0 is pushed:
+#
+#   1. runs the same checks as a pull request,
+#   2. builds the Docker image for ordinary PCs and for ARM machines (a Raspberry Pi, say)
+#      and publishes it to ghcr.io/themrpuffin/jid-globe,
+#   3. creates a GitHub Release with notes made from the changes since the last one.
+#
+# It can also be run by hand from the Actions page. That is a rehearsal: it builds the
+# image for both kinds of machine but publishes nothing.
+name: Release
+
+on:
+  push:
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
+  workflow_dispatch:
+
+# Nothing is allowed by default; each job below asks for only what it needs.
+permissions: {}
+
+env:
+  IMAGE: ghcr.io/themrpuffin/jid-globe
+
+jobs:
+  checks:
+    name: Checks
+    permissions:
+      contents: read
+    uses: ./.github/workflows/checks.yml
+
+  image:
+    name: Build and publish the image
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: write # to publish the image
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the whole history, to check the tag is on main
+
+      # A release must be a commit that is already on main, and the tag must say the same
+      # version as the package.json files, so the About pop-up shows the right number.
+      - name: Check the tag
+        if: github.event_name == 'push'
+        run: |
+          git fetch --quiet origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::The tag $GITHUB_REF_NAME is not on main. Releases are made from main."
+            exit 1
+          fi
+          for file in package.json api/package.json web/package.json; do
+            version="v$(node -p "require('./$file').version")"
+            if [ "$version" != "$GITHUB_REF_NAME" ]; then
+              echo "::error::The tag is $GITHUB_REF_NAME but $file says $version. Run 'make version V=...' first."
+              exit 1
+            fi
+          done
+
+      # QEMU lets this (Intel) machine build the ARM version of the image.
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Sign in to the registry
+        if: github.event_name == 'push'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Works out the image's names: v1.2.3 becomes :1.2.3, :1.2 and :latest.
+      - name: Work out the image tags
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,enable=${{ github.event_name != 'push' }}
+
+      # The first seven characters of the commit, shown in the app as its build.
+      - name: Work out the build name
+        id: build
+        run: echo "commit=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Build the image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BUILD_COMMIT=${{ steps.build.outputs.commit }}
+          # Reuses unchanged build steps from earlier runs.
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  release:
+    name: Create the GitHub Release
+    if: github.event_name == 'push'
+    needs: image
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: write # to create the release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          {
+            echo '```sh'
+            echo "docker pull $IMAGE:$version"
+            echo '```'
+          } > notes.md
+          gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" \
+            --notes-file notes.md --generate-notes

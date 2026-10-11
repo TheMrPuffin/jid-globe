@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#070d1c" />
+    <title>JID Globe · Stats</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <script>
+      // Adding ?kiosk to the address hides the links to other pages (see the README).
+      // This runs before the page is drawn, so the links never flash up.
+      if (new URLSearchParams(location.search).has('kiosk')) document.documentElement.classList.add('kiosk');
+    </script>
+  </head>
+  <body class="page">
+    <header class="page-header">
+      <h1>JID Globe <span>Stats</span></h1>
+      <nav>
+        <a href="/">Globe</a>
+        <a href="/stats" aria-current="page">Stats</a>
+        <a href="/logbook">Logbook</a>
+        <a href="/submit">Submit</a>
+      </nav>
+      <div id="live" class="live" data-state="connecting">Connecting…</div>
+    </header>
+
+    <main id="dashboard" class="dashboard"></main>
+
+    <footer class="page-footer">
+      <a id="kiosk-link" href="?kiosk" class="page-link" title="Hide the links to other pages on this screen">Kiosk mode</a>
+      <button id="about-link" type="button" class="link-button" title="Who made this, and whose data it uses">About</button>
+    </footer>
+
+    <script type="module" src="/src/stats-page.ts"></script>
+  </body>
+</html>

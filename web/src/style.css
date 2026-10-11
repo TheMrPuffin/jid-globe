@@ -1,0 +1,1612 @@
+:root {
+  --bg: #070d1c;
+  --panel: #0f1830;
+  --field: #18233f;
+  --border: #2a3a5f;
+  --text: #e8eefc;
+  --muted: #94a3c4;
+  --accent: #38bdf8;
+  --danger: #f87171;
+  --warning: #fbbf24;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+/* Globe on the left, panel on the right. On phones they stack (see the end of the file). */
+#app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  height: 100dvh;
+}
+
+#globe-wrap {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#globe {
+  position: absolute;
+  inset: 0;
+}
+
+/* Buttons and badges laid over the globe always sit above the labels drawn on the globe itself. */
+#globe-wrap > :not(#globe) {
+  z-index: 2;
+}
+
+#globe-wrap.picking {
+  cursor: crosshair;
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
+.live,
+.pick-hint,
+.legend,
+.map-credit,
+.view-message {
+  position: absolute;
+  background: rgba(7, 13, 28, 0.75);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+/* The connection badge. On the globe page it sits in the bottom strip beside the legend;
+   on the other pages it sits in the header. */
+.live {
+  padding: 4px 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.live::before {
+  content: '●';
+  margin-right: 6px;
+  color: var(--warning);
+}
+
+.live[data-state='live']::before {
+  color: #34d399;
+}
+
+.pick-hint {
+  top: 116px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  border-color: var(--accent);
+  white-space: nowrap;
+}
+
+/* The tab on the edge of the globe that hides or shows the side panel. */
+.panel-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  width: 26px;
+  min-height: 72px;
+  margin: 0;
+  padding: 0;
+  transform: translateY(-50%);
+  background: rgba(7, 13, 28, 0.75);
+  border: 1px solid var(--border);
+  border-right: 0;
+  border-radius: 10px 0 0 10px;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.panel-toggle:hover {
+  background: var(--field);
+}
+
+/* With the panel hidden, the globe gets the whole window. */
+#app.panel-hidden {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#app.panel-hidden #panel {
+  display: none;
+}
+
+/* Map / Streets / Satellite buttons in the corner of the globe. */
+.view-switch {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  background: rgba(7, 13, 28, 0.75);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.view-switch button {
+  width: auto;
+  margin: 0;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.view-switch button.active {
+  background: var(--accent);
+  color: #04121f;
+  font-weight: 700;
+}
+
+/* Top left of the globe: play / pause for the spin and, while it is spinning,
+   the switch for following new pins. */
+.spin-controls {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.spin-controls button {
+  width: auto;
+  margin: 0;
+  padding: 0 12px;
+  background: rgba(7, 13, 28, 0.75);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.spin-controls button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Shown under the view buttons while on Satellite. */
+.map-toggles {
+  position: absolute;
+  top: 62px;
+  right: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.map-toggle {
+  width: auto;
+  margin: 0;
+  padding: 0 12px;
+  background: rgba(7, 13, 28, 0.75);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.map-toggle.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* A strip along the bottom of the globe: the colour legend on the left and, in the
+   Streets and Satellite views, the map credit on the right. On a narrow screen the
+   credit moves to its own line above the legend. */
+.globe-footer {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  flex-wrap: wrap-reverse;
+  align-items: flex-end;
+  gap: 6px 10px;
+  pointer-events: none;
+}
+
+.globe-footer .legend,
+.globe-footer .live,
+.globe-footer .map-credit {
+  position: static;
+}
+
+/* Beside the legend the badge stretches to the legend's height, with its text centred. */
+.globe-footer .live {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+}
+
+/* "Showing 5 of 36 JIDs" in the bottom strip while the logbook filter is hiding pins. */
+.pin-filter-note {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px 0 10px;
+  background: rgba(7, 13, 28, 0.85);
+  border: 1px solid var(--warning);
+  border-radius: 8px;
+  color: var(--warning);
+  font-size: 13px;
+  white-space: nowrap;
+  pointer-events: auto; /* the strip ignores taps, but this has a button in it */
+}
+
+.pin-filter-note[hidden] {
+  display: none;
+}
+
+.pin-filter-note button {
+  width: auto;
+  min-height: 24px;
+  margin: 0;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.map-credit {
+  margin-left: auto;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.view-message {
+  top: 62px;
+  left: 10px;
+  right: 10px;
+  padding: 8px 12px;
+  border-color: var(--warning);
+  color: var(--text);
+  text-align: center;
+}
+
+.legend {
+  margin: 0;
+  padding: 6px 10px;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+}
+
+.dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+  flex: none;
+}
+
+.globe-tip {
+  background: rgba(7, 13, 28, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font: 13px system-ui, sans-serif;
+  color: var(--text);
+}
+
+/* A town on the globe: a small dot with its name to the right. */
+.city-label {
+  position: relative;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.city-label i {
+  position: absolute;
+  left: -2px;
+  top: -2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #dbe7ff;
+}
+
+.city-label span {
+  position: absolute;
+  left: 6px;
+  top: -8px;
+  white-space: nowrap;
+  font: 11px system-ui, sans-serif;
+  color: #dbe7ff;
+  text-shadow: 0 0 3px #000, 0 0 3px #000;
+}
+
+/* The banner across the top of the globe when a JID has just been added. */
+.new-pin-banner {
+  position: absolute;
+  top: 62px;
+  left: 50%;
+  max-width: calc(100% - 20px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(7, 13, 28, 0.9);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6);
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+/* Setting a layout above stops the plain "hidden" switch working, so spell it out. */
+.new-pin-banner[hidden] {
+  display: none;
+}
+
+.new-pin-banner .dot {
+  margin: 0;
+}
+
+.new-pin-banner .place {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* "from PC01" when the entry came from a machine with a station label. */
+.new-pin-banner .from {
+  flex: none;
+  color: var(--accent);
+}
+
+/* "+3 more" when other new JIDs are waiting for their turn. */
+.new-pin-banner .waiting {
+  flex: none;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #04121f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.new-pin-banner.show {
+  animation: banner-in 0.5s ease-out;
+}
+
+@keyframes banner-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-24px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+}
+
+/* The "NEW" label that pops up on the globe at a pin that has just been added. */
+.pin-new {
+  position: relative;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.pin-new b {
+  position: absolute;
+  left: 0;
+  bottom: 14px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #04121f;
+  font: 700 13px/1.4 system-ui, sans-serif;
+  white-space: pre;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+  transform: translateX(-50%);
+  animation: new-pin-pop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1);
+}
+
+@keyframes new-pin-pop {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(12px) scale(0.3);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+}
+
+/* People who have asked their device for less motion get the same information without the movement. */
+@media (prefers-reduced-motion: reduce) {
+  .new-pin-banner.show,
+  .pin-new b {
+    animation: none;
+  }
+}
+
+/* The number on a pin that holds more than one JID. */
+.pin-badge {
+  position: relative;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* The "Counts" switch on the globe hides the numbers without touching the pins. */
+.hide-counts .pin-badge b {
+  display: none;
+}
+
+.pin-badge b {
+  position: absolute;
+  left: 4px;
+  top: -22px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #04121f;
+  font: 700 11px/18px system-ui, sans-serif;
+  text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+#panel {
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+  padding: 14px 16px 20px;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+h2 {
+  font-size: 16px;
+  margin: 22px 0 4px;
+}
+
+/* Subtle lines between the sections of the globe page's side panel:
+   find a place | add a JID | logbook | the links at the bottom. */
+#panel > #place-search,
+#panel > #add-form,
+#panel > #logbook,
+#panel > footer {
+  margin-top: 18px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(148, 163, 196, 0.18);
+}
+
+/* The line now does the separating, so the headings under it need less space above. */
+#panel > #add-form > h2,
+#panel > #logbook > .logbook-heading {
+  margin-top: 14px;
+}
+
+#panel > footer {
+  padding-top: 14px;
+}
+
+.stats {
+  display: flex;
+  gap: 14px;
+  margin: 0;
+  text-align: center;
+}
+
+.stats dt {
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.stats dd {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* The "Quick stats" link at the end of the sidebar's row of page buttons. */
+.stats-open {
+  display: block;
+  flex: none;
+  width: auto;
+  min-height: 32px;
+  margin: 0 0 0 auto;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+/* ---- The stats pop-up ---- */
+.stats-dialog {
+  width: min(880px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.stats-dialog::backdrop {
+  background: rgba(2, 6, 16, 0.7);
+}
+
+.stats-dialog header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 12px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.stats-dialog header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.stats-dialog header button {
+  width: auto;
+  margin: 0;
+}
+
+.stats-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 24px;
+  padding: 16px;
+}
+
+.stat-cards {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  background: var(--field);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  min-width: 0;
+}
+
+.stat-card strong {
+  font-size: 20px;
+  overflow-wrap: anywhere;
+}
+
+.stat-card-label,
+.stat-card-detail {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.stat-section h3 {
+  margin: 18px 0 6px;
+  font-size: 15px;
+}
+
+/* One line of a chart. The coloured bar sits behind the text. */
+.stat-row {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 8px;
+  margin-bottom: 3px;
+  border-radius: 6px;
+  background: var(--field);
+  overflow: hidden;
+}
+
+.stat-row > * {
+  position: relative;
+}
+
+.stat-row .stat-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  opacity: 0.35;
+}
+
+.stat-name {
+  white-space: pre;
+}
+
+.stat-detail {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A chart line that is a link (stations link to their entries on the logbook page). */
+a.stat-row {
+  color: inherit;
+  text-decoration: none;
+}
+
+a.stat-row:hover {
+  outline: 1px solid var(--accent);
+}
+
+/* In kiosk mode nothing may lead to another page. */
+.kiosk a.stat-row {
+  pointer-events: none;
+}
+
+/* "and 93 more" under a shortened list (a button in the pop-up, plain text on the dashboard). */
+.stat-more {
+  display: block;
+  width: auto;
+  min-height: 32px;
+  margin: 6px 0 0;
+  padding: 4px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+  text-align: left;
+}
+
+button.stat-more {
+  color: var(--accent);
+}
+
+.stat-row.faded {
+  opacity: 0.5;
+}
+
+label {
+  display: block;
+  margin: 12px 0 4px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+input,
+button {
+  font: inherit;
+  color: inherit;
+  min-height: 44px;
+  border-radius: 8px;
+}
+
+input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--field);
+  border: 1px solid var(--border);
+}
+
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+input:disabled {
+  opacity: 0.5;
+}
+
+#jid {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+#jid::placeholder {
+  font-weight: 400;
+  opacity: 0.4;
+}
+
+button {
+  width: 100%;
+  margin-top: 12px;
+  padding: 8px 14px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #04121f;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--accent);
+}
+
+button.secondary.active {
+  background: var(--accent);
+  color: #04121f;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* The four chips under the JID box: region, country, number, letter. Always one row. */
+.decode {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  min-height: 30px;
+}
+
+.chip {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--field);
+  border: 1px solid var(--border);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* The country chip gives way if the row is too long: its name is cut short with "...". */
+.chip.flexible {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The gap sits between the code and its name, so a chip with only a code stays centred. */
+.chip b + span {
+  margin-left: 6px;
+}
+
+/* A part of the JID that hasn't been typed yet. */
+.chip.waiting {
+  background: transparent;
+  border-style: dashed;
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.message {
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+
+.error {
+  color: var(--danger);
+}
+
+.warning {
+  color: var(--warning);
+}
+
+.hint {
+  color: var(--muted);
+}
+
+.autocomplete {
+  position: relative;
+}
+
+.city-list {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--field);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.city-list button {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-weight: 400;
+  text-align: left;
+}
+
+.city-list button:hover,
+.city-list button:focus-visible {
+  background: var(--border);
+}
+
+.city-list small,
+.city-list .none {
+  color: var(--muted);
+}
+
+.city-list .none {
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.log-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+.log-list li {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.log-list li.flash {
+  background: rgba(56, 189, 248, 0.18);
+}
+
+.log-list button {
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-weight: 400;
+}
+
+.log-row {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  text-align: left;
+}
+
+.log-row:hover {
+  background: var(--field);
+}
+
+.log-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.log-text strong {
+  letter-spacing: 0.06em;
+}
+
+/* The "x3" on a JID that has been entered more than once. */
+.log-text .log-count {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #04121f;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.log-text span {
+  font-size: 13px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* The pop-up that asks for a passcode. */
+.passcode-dialog {
+  width: min(360px, calc(100vw - 32px));
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.passcode-dialog::backdrop {
+  background: rgba(2, 6, 16, 0.7);
+}
+
+.passcode-dialog h2 {
+  margin: 0 0 12px;
+}
+
+.passcode-dialog .ask-hint {
+  margin: 0 0 12px;
+}
+
+.passcode-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+/* The box shown in place of the form while adding JIDs is locked on this device. */
+.submit-lock {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid var(--warning);
+  border-radius: 10px;
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.submit-lock p {
+  margin: 0;
+}
+
+/* While locked, everything in the form except its heading and that box is hidden. */
+#add-form.locked > :not(h2):not(.submit-lock) {
+  display: none;
+}
+
+/* The small "lock again" link at the bottom of the form. */
+.submit-relock {
+  width: auto;
+  min-height: 32px;
+  margin: 10px 0 0 auto;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.submit-relock:not([hidden]) {
+  display: block;
+}
+
+/* "Logbook" with the Admin lock button beside it. */
+.logbook-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 22px 0 10px; /* the bottom gap keeps the Admin button clear of the filter box */
+}
+
+.logbook-heading h2 {
+  margin: 0;
+}
+
+.admin-toggle {
+  width: auto;
+  min-height: 32px;
+  margin: 0;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.admin-toggle.active {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+/* While this device is locked, the Move and Delete buttons aren't shown at all. */
+.admin-locked .log-actions {
+  display: none;
+}
+
+/* Move and Delete, stacked at the right-hand end of a logbook row. */
+.log-actions {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.log-action {
+  width: auto;
+  min-width: 64px;
+  min-height: 40px;
+  padding: 0 8px;
+  color: var(--muted) !important;
+  font-size: 13px;
+}
+
+.log-action:hover {
+  color: var(--text) !important;
+}
+
+.log-action.confirm {
+  color: var(--danger) !important;
+  font-weight: 700;
+}
+
+input:read-only {
+  opacity: 0.7;
+}
+
+footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 12px;
+  align-items: center;
+  margin-top: 22px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Tall enough to tap comfortably on a phone. */
+footer a {
+  display: inline-block;
+  padding: 12px 0;
+}
+
+a {
+  color: var(--accent);
+}
+
+.stats-page-link {
+  margin-left: auto;
+  font-size: 14px;
+}
+
+/* ---- Pages without the globe (the stats dashboard, and any added later) ---- */
+/* The page is at least as tall as the screen, so its footer sits at the bottom of the
+   screen on a short page and at the end of the content on a long one. */
+body.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/* Without this the main part of the page sizes itself to its contents instead of to
+   the screen, and wide content (the dashboard's cards) spills off the side. */
+body.page > main {
+  width: 100%;
+  min-width: 0;
+}
+
+.page-footer {
+  display: block;
+  margin-top: auto;
+  padding: 18px 16px;
+  text-align: center;
+  font-size: 13px;
+}
+
+.page-footer a {
+  display: inline-block;
+  padding: 10px 12px;
+}
+
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  justify-content: flex-start;
+  gap: 20px;
+  padding: 12px 20px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+
+.page-header h1 span {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* The page buttons: in the header on most pages, and in the sidebar on the globe page. */
+.page-header nav,
+.panel-nav nav {
+  display: flex;
+  gap: 4px;
+}
+
+.page-header nav a,
+.panel-nav nav a {
+  padding: 10px 14px;
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.page-header nav a:hover,
+.panel-nav nav a:hover {
+  background: var(--field);
+}
+
+.page-header nav a[aria-current='page'],
+.panel-nav nav a[aria-current='page'] {
+  background: var(--accent);
+  color: #04121f;
+  font-weight: 700;
+}
+
+/* In the sidebar they share a row with "Quick stats", so they are a little more compact. */
+.panel-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.panel-nav nav {
+  gap: 2px;
+}
+
+.panel-nav nav a {
+  padding: 8px 9px;
+  font-size: 14px;
+}
+
+/* On these pages the Live badge sits in the header instead of floating over a globe. */
+.page-header .live {
+  position: static;
+  margin-left: auto;
+}
+
+/* A button that looks like a link, for footer actions that open a pop-up instead of a page. */
+.link-button {
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 400;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.page-footer .link-button {
+  padding: 10px 12px;
+}
+
+/* Kiosk mode (?kiosk on the end of the address): no links to other pages. */
+.kiosk .page-header nav,
+.kiosk .panel-nav nav,
+.kiosk .page-link {
+  display: none;
+}
+
+/* The "About" pop-up: who made the app and whose data it uses. */
+.about-dialog {
+  width: min(440px, calc(100vw - 32px));
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.about-dialog p {
+  margin: 0 0 8px;
+}
+
+.about-dialog h3 {
+  margin: 16px 0 6px;
+  font-size: 14px;
+}
+
+.about-dialog ul {
+  margin: 0 0 12px;
+  padding-left: 18px;
+}
+
+.about-dialog button {
+  margin-top: 8px;
+}
+
+/* The credits have to stay visible, but in kiosk mode their links stop working, so they
+   can't be used to leave the page. */
+.kiosk .about-dialog a,
+.kiosk footer a {
+  pointer-events: none;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* The submit page: one narrow column, comfortable on a phone. */
+.submit-page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 4px 16px 32px;
+}
+
+/* The form sits in a panel, like the sidebar on the globe page. */
+.submit-page form {
+  margin-top: 16px;
+  padding: 4px 18px 18px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.submit-page form h2 {
+  margin-top: 14px;
+  font-size: 18px;
+}
+
+.submit-page #save {
+  min-height: 52px;
+  font-size: 17px;
+}
+
+/* "This machine: PC01" on the submit page, when the address sets a station. */
+.station-label {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: right;
+}
+
+/* The green "Saved" confirmation at the top of the submit page. */
+.saved-message {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border: 1px solid #34d399;
+  border-radius: 10px;
+  background: rgba(52, 211, 153, 0.12);
+  color: #a7f3d0;
+  font-weight: 700;
+}
+
+/* The three headline numbers, when they sit in a page header. */
+.page-header .stats {
+  margin-left: auto;
+}
+
+.page-header .stats + .live {
+  margin-left: 0;
+}
+
+/* ---- The logbook feed page ---- */
+.feed-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 16px 20px 40px;
+}
+
+.feed {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.feed-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+  padding: 14px 18px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 20px;
+}
+
+.feed-row .dot {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.feed-what {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 16px;
+}
+
+.feed-jid {
+  font-size: 26px;
+  letter-spacing: 0.06em;
+}
+
+.feed-jid .log-count {
+  display: inline-block;
+  margin-left: 10px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #04121f;
+  font-size: 15px;
+  letter-spacing: 0;
+  vertical-align: middle;
+}
+
+.feed-note {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
+.feed-when {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--muted);
+  font-size: 16px;
+  white-space: nowrap;
+}
+
+.feed-station {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.feed-station.unknown {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* The station picker above the feed. */
+.feed-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 14px;
+}
+
+.feed-filter-label {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.feed-filter select {
+  max-width: 100%;
+}
+
+.feed-filter select {
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--field);
+  color: var(--text);
+  font: inherit;
+}
+
+.feed-clear {
+  width: auto;
+  margin: 0;
+}
+
+.feed-summary {
+  color: var(--muted);
+}
+
+/* A station name on a feed row is a button (it filters to that station) but looks like text. */
+button.feed-station {
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: inherit;
+  cursor: pointer;
+}
+
+button.feed-station:hover {
+  text-decoration: underline;
+}
+
+/* "Show more" and "Back to just the latest" under the feed. */
+.feed-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.feed-buttons button {
+  flex: 1 1 260px;
+}
+
+/* A row that has just arrived glows for a few seconds. (It also grows into place, pushing
+   the rows below it down smoothly; that part is done in logbook-page.ts.) */
+.feed-new {
+  animation: feed-glow 6s ease-out;
+}
+
+@keyframes feed-glow {
+  from {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent), 0 0 28px rgba(56, 189, 248, 0.5);
+    background: rgba(56, 189, 248, 0.16);
+  }
+  to {
+    border-color: var(--border);
+    box-shadow: none;
+    background: var(--panel);
+  }
+}
+
+/* The dashboard: headline cards across the top, then as many columns as fit. */
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 4px 28px;
+  max-width: 1900px;
+  margin: 0 auto;
+  padding: 20px;
+  font-size: 17px;
+}
+
+.dashboard .stat-card strong {
+  font-size: 30px;
+}
+
+.dashboard .stat-card-label,
+.dashboard .stat-card-detail,
+.dashboard .stat-detail {
+  font-size: 14px;
+}
+
+.dashboard .stat-section h3 {
+  font-size: 18px;
+}
+
+.dashboard .stat-row {
+  padding: 9px 12px;
+}
+
+/* Phones: globe on top, panel underneath. */
+@media (max-width: 800px) {
+  #app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 42dvh minmax(0, 1fr);
+  }
+
+  #app.panel-hidden {
+    grid-template-rows: 100dvh;
+  }
+
+  /* A phone isn't wide enough for the spin buttons and the view buttons side by side,
+     so the spin buttons drop to a second row and everything below moves down to match. */
+  .spin-controls {
+    top: 62px;
+  }
+
+  .new-pin-banner {
+    top: 114px;
+  }
+
+  .pick-hint {
+    top: 166px;
+  }
+
+  /* The panel is underneath on a phone, so the tab sits on the bottom edge instead,
+     just above the colour legend. */
+  .panel-toggle {
+    top: auto;
+    right: 50%;
+    bottom: 0;
+    width: 72px;
+    min-height: 26px;
+    transform: translateX(50%);
+    border: 1px solid var(--border);
+    border-bottom: 0;
+    border-radius: 10px 10px 0 0;
+    line-height: 1;
+  }
+
+  .globe-footer {
+    bottom: 32px;
+  }
+
+  #panel {
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+
+  .stats-body {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 10px 16px;
+  }
+
+  .feed-page {
+    padding: 12px 12px 32px;
+  }
+
+  .feed-row {
+    gap: 10px;
+    padding: 10px 12px;
+    font-size: 16px;
+  }
+
+  .feed-jid {
+    font-size: 20px;
+  }
+
+  .feed-when {
+    font-size: 13px;
+  }
+
+  .dashboard {
+    padding: 14px 16px;
+  }
+
+  .dashboard .stat-card strong {
+    font-size: 22px;
+  }
+
+  .stat-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .legend {
+    font-size: 11px;
+    gap: 0 8px;
+    padding: 4px 8px;
+  }
+}

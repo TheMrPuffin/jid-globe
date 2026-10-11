@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#070d1c" />
+    <title>JID Globe · Submit</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <script>
+      // Adding ?kiosk to the address hides the links to other pages (see the README).
+      // This runs before the page is drawn, so the links never flash up.
+      if (new URLSearchParams(location.search).has('kiosk')) document.documentElement.classList.add('kiosk');
+    </script>
+  </head>
+  <body class="page">
+    <header class="page-header">
+      <h1>JID Globe <span>Submit</span></h1>
+      <nav>
+        <a href="/">Globe</a>
+        <a href="/stats">Stats</a>
+        <a href="/logbook">Logbook</a>
+        <a href="/submit" aria-current="page">Submit</a>
+      </nav>
+      <div id="live" class="live" data-state="connecting">Connecting…</div>
+    </header>
+
+    <main class="submit-page">
+      <p id="station-label" class="station-label" hidden></p>
+      <p id="saved-message" class="saved-message" role="status" hidden></p>
+
+      <!-- The same form as on the globe page (web/src/form.ts runs both), so the two
+           must keep the same ids. There is no globe here, so no "Pick exact spot". -->
+      <form id="add-form" autocomplete="off">
+        <h2 id="form-title">Add a JID</h2>
+
+        <!-- Shown instead of the form when the server has SUBMIT_LOCK on and this device isn't unlocked. -->
+        <div id="submit-lock" class="submit-lock" hidden>
+          <p>Adding JIDs is locked on this device.</p>
+          <button id="submit-unlock" type="button">Unlock with passcode</button>
+        </div>
+
+        <label for="jid">JID code</label>
+        <input id="jid" type="text" maxlength="8" placeholder="5GB12A" autocapitalize="characters" spellcheck="false" autofocus />
+        <div id="decode" class="decode" aria-live="polite"></div>
+        <p id="jid-error" class="message error" role="alert" hidden></p>
+        <p id="jid-duplicate" class="message warning" hidden></p>
+
+        <label for="city">City or town (optional)</label>
+        <div class="autocomplete">
+          <input id="city" type="text" maxlength="100" placeholder="Type a JID first" disabled />
+          <ul id="city-list" class="city-list" hidden></ul>
+        </div>
+        <p id="city-none" class="message hint" hidden>No city or town found. Leave it blank and the pin will go in the middle of the country.</p>
+
+        <button id="pick" type="button" class="secondary" hidden disabled>Pick exact spot</button>
+        <p id="place-summary" class="message hint"></p>
+
+        <label for="note">Note (optional)</label>
+        <input id="note" type="text" maxlength="120" placeholder="Type a JID first" disabled />
+
+        <button id="save" type="submit" disabled>Save pin</button>
+        <button id="cancel-move" type="button" class="secondary" hidden>Cancel move</button>
+        <p id="save-error" class="message error" role="alert" hidden></p>
+        <button id="submit-relock" type="button" class="submit-relock page-link" hidden>Lock adding JIDs on this device</button>
+      </form>
+    </main>
+
+    <footer class="page-footer">
+      <button id="station-link" type="button" class="link-button page-link" title="Give this machine a name, so the JIDs it adds are tagged with it" hidden>Set station</button>
+      <a id="kiosk-link" href="?kiosk" class="page-link" title="Hide the links to other pages on this screen">Kiosk mode</a>
+      <button id="about-link" type="button" class="link-button" title="Who made this, and whose data it uses">About</button>
+    </footer>
+
+    <script type="module" src="/src/submit-page.ts"></script>
+  </body>
+</html>

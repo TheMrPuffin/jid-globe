@@ -1,0 +1,57 @@
+# Dependabot keeps the things this project is built from up to date. Once a week it looks
+# for newer versions and opens pull requests; the Checks workflow runs on each one, so a
+# green tick means it is safe to merge.
+#
+# Security fixes are separate: with "Dependabot security updates" switched on in the
+# repository's settings, those arrive straight away rather than waiting for Monday.
+version: 2
+
+updates:
+  # The npm packages (the root package.json covers the api and web folders too).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/London
+    # Wait a week after a version comes out before suggesting it. Bad releases are
+    # usually caught and withdrawn within days.
+    cooldown:
+      default-days: 7
+    groups:
+      # Small updates arrive together as one pull request. A new major version of a
+      # package gets a pull request of its own, because it may need code changes.
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # These describe Node.js itself, so they stay on the same major as the Dockerfile.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
+
+  # The Node.js image the app runs on (the FROM lines in the Dockerfile).
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/London
+    ignore:
+      # Moving to a new major version of Node.js is a decision, not a routine update.
+      - dependency-name: node
+        update-types: ['version-update:semver-major']
+
+  # The actions used by the workflows in .github/workflows.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '07:00'
+      timezone: Europe/London
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ['*']

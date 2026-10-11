@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#070d1c" />
+    <title>JID Globe</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/style.css" />
+    <script>
+      // Adding ?kiosk to the address hides the links to other pages (see the README).
+      // This runs before the page is drawn, so the links never flash up.
+      if (new URLSearchParams(location.search).has('kiosk')) document.documentElement.classList.add('kiosk');
+    </script>
+  </head>
+  <body>
+    <div id="app">
+      <div id="globe-wrap">
+        <div id="globe"></div>
+        <div class="spin-controls">
+          <button id="spin" type="button">▶ Spin</button>
+          <button id="follow" type="button" title="While spinning, fly to each new pin as it is added" hidden>Follow new pins</button>
+        </div>
+        <div id="view-switch" class="view-switch" role="group" aria-label="Map style">
+          <button type="button" data-view="map" title="Works without internet">Basic</button>
+          <button type="button" data-view="streets" title="Needs internet">Streets</button>
+          <button type="button" data-view="satellite" title="Needs internet">Satellite</button>
+        </div>
+        <!-- On/off switches for things drawn on the globe. -->
+        <div class="map-toggles">
+          <button id="borders-toggle" type="button" class="map-toggle" hidden>Borders</button>
+          <button id="counts-toggle" type="button" class="map-toggle" title="The numbers on pins that hold more than one JID">Counts</button>
+        </div>
+        <div id="view-message" class="view-message" role="status" hidden></div>
+        <button id="panel-toggle" type="button" class="panel-toggle" aria-controls="panel">›</button>
+        <div id="pick-hint" class="pick-hint" hidden>Tap the globe to place the pin</div>
+        <div id="new-pin-banner" class="new-pin-banner" role="status" hidden></div>
+        <div class="globe-footer">
+          <ul id="legend" class="legend" aria-label="Pin colours by region"></ul>
+          <div id="live" class="live" data-state="connecting">Connecting…</div>
+          <!-- Shown while the logbook filter is hiding some pins. -->
+          <div id="pin-filter-note" class="pin-filter-note" hidden>
+            <span id="pin-filter-text"></span>
+            <button id="pin-filter-clear" type="button">Clear</button>
+          </div>
+          <div id="map-credit" class="map-credit" hidden></div>
+        </div>
+      </div>
+
+      <aside id="panel">
+        <header>
+          <h1>JID Globe</h1>
+          <dl id="stats" class="stats">
+            <div><dt>JIDs</dt><dd id="stat-total">0</dd></div>
+            <div><dt>Countries</dt><dd id="stat-countries">0</dd></div>
+            <div><dt>Regions</dt><dd id="stat-regions">0/7</dd></div>
+          </dl>
+        </header>
+        <!-- The same page buttons as on the other pages, with the stats pop-up link beside them. -->
+        <div class="panel-nav">
+          <nav>
+            <a href="/" aria-current="page">Globe</a>
+            <a href="/stats">Stats</a>
+            <a href="/logbook">Logbook</a>
+            <a href="/submit">Submit</a>
+          </nav>
+          <button id="stats-open" type="button" class="stats-open">Quick stats ›</button>
+        </div>
+
+        <section id="place-search">
+          <label for="place">Find a place</label>
+          <div class="autocomplete">
+            <input id="place" type="search" maxlength="50" placeholder="City, town or country" autocomplete="off" />
+            <ul id="place-list" class="city-list" hidden></ul>
+          </div>
+        </section>
+
+        <form id="add-form" autocomplete="off">
+          <h2 id="form-title">Add a JID</h2>
+
+          <!-- Shown instead of the form when the server has SUBMIT_LOCK on and this device isn't unlocked. -->
+          <div id="submit-lock" class="submit-lock" hidden>
+            <p>Adding JIDs is locked on this device.</p>
+            <button id="submit-unlock" type="button">Unlock with passcode</button>
+          </div>
+
+          <label for="jid">JID code</label>
+          <input id="jid" type="text" maxlength="8" placeholder="5GB12A" autocapitalize="characters" spellcheck="false" />
+          <div id="decode" class="decode" aria-live="polite"></div>
+          <p id="jid-error" class="message error" role="alert" hidden></p>
+          <p id="jid-duplicate" class="message warning" hidden></p>
+
+          <label for="city">City or town (optional)</label>
+          <div class="autocomplete">
+            <input id="city" type="text" maxlength="100" placeholder="Type a JID first" disabled />
+            <ul id="city-list" class="city-list" hidden></ul>
+          </div>
+          <p id="city-none" class="message hint" hidden>No city or town found. Pick the exact spot on the globe instead, or leave the pin in the middle of the country.</p>
+
+          <button id="pick" type="button" class="secondary" disabled>Pick exact spot</button>
+          <p id="place-summary" class="message hint"></p>
+
+          <label for="note">Note (optional)</label>
+          <input id="note" type="text" maxlength="120" placeholder="Type a JID first" disabled />
+
+          <button id="save" type="submit" disabled>Save pin</button>
+          <button id="cancel-move" type="button" class="secondary" hidden>Cancel move</button>
+          <p id="save-error" class="message error" role="alert" hidden></p>
+          <button id="submit-relock" type="button" class="submit-relock page-link" hidden>Lock adding JIDs on this device</button>
+        </form>
+
+        <section id="logbook">
+          <div class="logbook-heading">
+            <h2>Logbook</h2>
+            <button id="admin-toggle" type="button" class="admin-toggle">Admin</button>
+          </div>
+          <input id="filter" type="search" placeholder="Filter by JID, country, region, station…" aria-label="Filter logbook" />
+          <ul id="log-list" class="log-list"></ul>
+          <p id="log-empty" class="message hint" hidden></p>
+        </section>
+
+        <footer>
+          <a href="/api/export.csv" class="page-link">Download CSV</a>
+          <button id="station-link" type="button" class="link-button page-link" title="Give this machine a name, so the JIDs it adds are tagged with it" hidden>Set station</button>
+          <a id="kiosk-link" href="/?kiosk" class="page-link" title="Hide the links to other pages on this screen">Kiosk mode</a>
+          <button id="about-link" type="button" class="link-button" title="Who made this, and whose data it uses">About</button>
+        </footer>
+      </aside>
+    </div>
+    <dialog id="stats-dialog" class="stats-dialog" aria-labelledby="stats-title">
+      <header>
+        <h2 id="stats-title">Quick stats</h2>
+        <a href="/stats" class="stats-page-link page-link">Open as a page</a>
+        <button id="stats-close" type="button" class="secondary">Close</button>
+      </header>
+      <div id="stats-body" class="stats-body"></div>
+    </dialog>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

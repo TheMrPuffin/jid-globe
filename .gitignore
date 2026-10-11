@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+
+# Local development database (pins you add while running `npm run dev`)
+/data/
+
+# Built from api/data/cities5000.txt by `npm run cities -w api`
+api/data/cities.db
+
+# Backups made with the commands in the README
+backup*.db

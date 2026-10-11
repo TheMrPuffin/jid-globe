@@ -1,0 +1,29 @@
+{
+  "name": "jid-globe-api",
+  "version": "1.0.0",
+  "private": true,
+  "author": "Alexander Garner (https://github.com/TheMrPuffin)",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "npm run cities -- --if-missing && tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "cities": "tsx scripts/build-cities.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fastify/rate-limit": "11.2.1",
+    "@fastify/static": "10.1.6",
+    "better-sqlite3": "13.0.3",
+    "fastify": "5.12.5",
+    "world-countries": "5.1.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "24.19.2",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "5.0.3"
+  }
+}
