@@ -20,6 +20,7 @@ import {
   MeshPhongMaterial,
   SphereGeometry,
   SRGBColorSpace,
+  Vector2,
 } from 'three';
 import { feature, mesh } from 'topojson-client';
 import worldData from 'world-atlas/countries-50m.json';
@@ -71,6 +72,11 @@ interface Shape extends UnwrappedRing {
 interface Country {
   id: string; // ISO numeric code, e.g. "826"
   rings: Shape[];
+  // Boxes that cover all of its rings between them. Nearby rings share a box, but a
+  // country made of far-apart pieces (the USA, Russia) gets one box per piece, so that
+  // recolouring it doesn't mean repainting the half of the world in between.
+  // Worked out the first time the country changes colour (see areasOf).
+  areas?: Bounds[];
 }
 
 /** The part of the world a picture covers, in degrees. */
@@ -106,8 +112,40 @@ function toShape(points: LngLat[]): Shape {
 
 const countries: Country[] = (feature(world, world.objects.countries) as any).features.map((f: any) => {
   const polygons: LngLat[][][] = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
-  return { id: f.id ?? '', rings: polygons.flat().map(toShape) };
+  const rings = polygons.flat().map(toShape);
+  return { id: f.id ?? '', rings };
 });
+
+const areasOf = (country: Country) => (country.areas ??= groupBoxes(country.rings));
+
+/** Puts boxes round the rings, merging any that overlap or nearly touch. */
+function groupBoxes(rings: Shape[]): Bounds[] {
+  const NEAR = 2; // degrees
+  const boxes: Bounds[] = rings.map((ring) => ({ west: ring.minLng, east: ring.maxLng, south: ring.minLat, north: ring.maxLat }));
+  let merged = true;
+  while (merged) {
+    merged = false;
+    for (let i = 0; i < boxes.length && !merged; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i];
+        const b = boxes[j];
+        const near =
+          a.west - NEAR <= b.east && b.west - NEAR <= a.east && a.south - NEAR <= b.north && b.south - NEAR <= a.north;
+        if (!near) continue;
+        boxes[i] = {
+          west: Math.min(a.west, b.west),
+          east: Math.max(a.east, b.east),
+          south: Math.min(a.south, b.south),
+          north: Math.max(a.north, b.north),
+        };
+        boxes.splice(j, 1);
+        merged = true;
+        break;
+      }
+    }
+  }
+  return boxes;
+}
 
 // Every coastline and border, each one listed once.
 const borderShapes: Shape[] = (mesh(world, world.objects.countries).coordinates as LngLat[][]).map(toShape);
@@ -314,13 +352,77 @@ export function createMapLayer(globe: GlobeInstance, element: HTMLElement) {
     }
   }
 
+  // ---- Changing a country's colour --------------------------------------------
+  //
+  // Repainting the whole-world image and sending all of it to the graphics card stops
+  // the page for about half a second, which shows as a jerk when a pin arrives from a
+  // new country. So when only a few countries change, just the boxes round them are
+  // repainted and sent.
+
+  const scratch = document.createElement('canvas');
+
+  /** Repaints the part of `image` (which shows `bounds`) that covers `area`. */
+  function repaintPart(image: ReturnType<typeof newImage>, bounds: Bounds, area: Bounds, withBorders: boolean): void {
+    const { width, height } = image.ctx.canvas;
+    const xPerDegree = width / (bounds.east - bounds.west);
+    const yPerDegree = height / (bounds.north - bounds.south);
+    const margin = 2; // pixels, for the soft edges drawn round each shape
+    const x0 = Math.max(0, Math.floor((area.west - bounds.west) * xPerDegree) - margin);
+    const x1 = Math.min(width, Math.ceil((area.east - bounds.west) * xPerDegree) + margin);
+    const y0 = Math.max(0, Math.floor((bounds.north - area.north) * yPerDegree) - margin);
+    const y1 = Math.min(height, Math.ceil((bounds.north - area.south) * yPerDegree) + margin);
+    if (x1 <= x0 || y1 <= y0) return; // that area isn't in this image
+
+    // Paint the box exactly as the full repaint would have painted those pixels.
+    scratch.width = x1 - x0;
+    scratch.height = y1 - y0;
+    const box: Bounds = {
+      west: bounds.west + x0 / xPerDegree,
+      east: bounds.west + x1 / xPerDegree,
+      north: bounds.north - y0 / yPerDegree,
+      south: bounds.north - y1 / yPerDegree,
+    };
+    paintMap(scratch.getContext('2d')!, box, highlighted, withBorders);
+    image.ctx.drawImage(scratch, x0, y0); // keeps the full image in step, in case it is ever resent
+
+    const part = new CanvasTexture(scratch);
+    part.colorSpace = SRGBColorSpace;
+    // The graphics card counts rows from the bottom of the image, not the top.
+    renderer.copyTextureToTexture(part, image.texture, null, new Vector2(x0, height - y1));
+    part.dispose();
+  }
+
+  // Above this many countries changing at once (such as when the pins first load), one
+  // full repaint is quicker than many small ones.
+  const MOST_COUNTRIES_TO_PATCH = 6;
+  let firstPaint = true;
+
   /** Repaints the map, colouring in the countries whose ISO numeric code is in `ids`. */
   function paint(ids: Set<string>): void {
+    const changed = [...ids].filter((id) => !highlighted.has(id));
+    changed.push(...[...highlighted].filter((id) => !ids.has(id)));
     highlighted = ids;
-    paintMap(worldImage.ctx, WHOLE_WORLD, highlighted, false);
-    worldImage.texture.needsUpdate = true;
-    painted = null; // the patch still shows the old colours
-    drawDetail();
+
+    if (firstPaint || changed.length > MOST_COUNTRIES_TO_PATCH) {
+      firstPaint = false;
+      paintMap(worldImage.ctx, WHOLE_WORLD, highlighted, false);
+      worldImage.texture.needsUpdate = true;
+      painted = null; // the patch still shows the old colours
+      drawDetail();
+      return;
+    }
+
+    for (const country of countries) {
+      if (!changed.includes(country.id)) continue;
+      // Shapes may run on past 180 degrees, so try each one a turn either way as well.
+      for (const box of areasOf(country)) {
+        for (const turn of TURNS) {
+          const area = { ...box, west: box.west + turn, east: box.east + turn };
+          repaintPart(worldImage, WHOLE_WORLD, area, false);
+          if (painted) repaintPart(detailImage, painted.bounds, area, true);
+        }
+      }
+    }
   }
 
   paint(highlighted);
