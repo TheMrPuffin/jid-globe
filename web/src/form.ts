@@ -7,7 +7,7 @@
 //
 // The form is used on two pages: the globe page and the submit page (which has no globe).
 import { asAdmin, isUnlocked as adminIsUnlocked, onAdminChange } from './admin';
-import { ApiError, createPin, moveJid, searchCities, type City, type Pin, type Placement } from './api';
+import { ApiError, createPin, fetchSettings, moveJid, searchCities, type City, type Pin, type Placement } from './api';
 import { byId, el, setMessage } from './dom';
 import { parseJid, type JidResult } from './jid';
 import { currentStation } from './station';
@@ -106,6 +106,14 @@ export function setupForm(options: FormOptions) {
   renderDecode();
 
   // ---- JID input -----------------------------------------------------------
+
+  // The example JID in the empty box can be changed with JID_PLACEHOLDER on the server.
+  // The page starts with the default one, so it stays if the server can't be reached.
+  fetchSettings()
+    .then((settings) => {
+      jidInput.placeholder = settings.jidPlaceholder;
+    })
+    .catch(() => {});
 
   jidInput.addEventListener('input', () => {
     parsed = parseJid(jidInput.value);

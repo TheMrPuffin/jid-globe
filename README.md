@@ -150,6 +150,7 @@ under `environment:` in a compose file. Recreate the container after changing on
 | `ADMIN_PASSCODE` | *(none)* | Unlocks moving and deleting pins. Pick something only the leaders know |
 | `SUBMIT_LOCK` | `off` | Set to `on` to make each device unlock before it can add JIDs |
 | `SUBMIT_PASSCODE` | *(none)* | The passcode for that unlock |
+| `JID_PLACEHOLDER` | `5GB123TXA` | The example JID shown greyed out in the empty JID box, for instance your own group's JID |
 
 To serve the app on a different port, change the first number in `-p 8080:8080`, for example
 `-p 9000:8080`.
