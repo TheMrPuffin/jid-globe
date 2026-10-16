@@ -14,6 +14,7 @@ const app = await buildApp({
   adminPasscode: config.adminPasscode,
   submitLock: config.submitLock,
   submitPasscode: config.submitPasscode,
+  jidPlaceholder: config.jidPlaceholder,
   webDist: config.webDist,
   logger: true,
   version: config.version,

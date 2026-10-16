@@ -36,6 +36,26 @@ describe('health', () => {
   });
 });
 
+describe('settings', () => {
+  it('gives the default placeholder JID when none is set', async () => {
+    expect((await app.inject('/api/settings')).json()).toEqual({ jidPlaceholder: '5GB123TXA' });
+  });
+
+  it('gives the placeholder JID it was set up with', async () => {
+    for (const [jidPlaceholder, expected] of [
+      [' 2KE456ABC ', '2KE456ABC'],
+      ['   ', '5GB123TXA'],
+    ]) {
+      const site = await buildApp({ pinsDb: openPinsDb(':memory:'), citiesDb: null, adminPasscode: 'secret', jidPlaceholder });
+      try {
+        expect((await site.inject('/api/settings')).json()).toEqual({ jidPlaceholder: expected });
+      } finally {
+        await site.close();
+      }
+    }
+  });
+});
+
 describe('pins API', () => {
   it('creates a pin and lists it', async () => {
     const created = await addPin(validPin);

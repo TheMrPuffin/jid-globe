@@ -18,6 +18,9 @@ import { deletePin, insertPin, listPins, moveJid, validateNewPin, validatePlace 
 // combined. 600 a minute (10 a second) is far more than a room of people can type.
 export const MAX_NEW_ENTRIES_PER_MINUTE = 600;
 
+/** Shown greyed out in the empty JID box when JID_PLACEHOLDER isn't set. */
+export const DEFAULT_JID_PLACEHOLDER = '5GB123TXA';
+
 export interface AppOptions {
   pinsDb: Database.Database;
   /** null when cities.db hasn't been built; city search then returns nothing. */
@@ -26,6 +29,8 @@ export interface AppOptions {
   /** When true, a device must be unlocked (with `submitPasscode`) before it can add JIDs. */
   submitLock?: boolean;
   submitPasscode?: string;
+  /** The example JID in the empty JID box. Blank or missing means DEFAULT_JID_PLACEHOLDER. */
+  jidPlaceholder?: string;
   webDist?: string;
   logger?: boolean;
   /** Reported by /api/health. */
@@ -48,6 +53,10 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   // Also says which version and build is running (shown in the About pop-up).
   const about = { version: options.version ?? 'unknown', build: options.build ?? 'dev' };
   app.get('/api/health', async () => ({ ok: true, ...about }));
+
+  // Settings the pages need from the server's environment.
+  const settings = { jidPlaceholder: options.jidPlaceholder?.trim() || DEFAULT_JID_PLACEHOLDER };
+  app.get('/api/settings', async () => settings);
 
   app.get('/api/pins', async () => listPins(pinsDb));
 

@@ -30,6 +30,8 @@ export const config = {
   // When on, a device must be unlocked with SUBMIT_PASSCODE before it can add JIDs.
   submitLock: isOn(process.env.SUBMIT_LOCK),
   submitPasscode: process.env.SUBMIT_PASSCODE ?? '',
+  // The example JID shown greyed out in the empty JID box. Blank means the built-in one.
+  jidPlaceholder: process.env.JID_PLACEHOLDER?.trim() ?? '',
   pinsDbPath: process.env.DB_PATH ?? path.join(repoRoot, 'data', 'jid-globe.db'),
   citiesDbPath: process.env.CITIES_DB_PATH ?? path.join(apiRoot, 'data', 'cities.db'),
   webDist: process.env.WEB_DIST ?? path.join(repoRoot, 'web', 'dist'),

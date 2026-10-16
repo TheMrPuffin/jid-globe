@@ -49,6 +49,16 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
   return (response.status === 204 ? undefined : await response.json()) as T;
 }
 
+/** Settings that come from the server's environment variables. */
+export interface Settings {
+  /** The example JID shown greyed out in the empty JID box (JID_PLACEHOLDER). */
+  jidPlaceholder: string;
+}
+
+export function fetchSettings(): Promise<Settings> {
+  return request('/api/settings');
+}
+
 export function fetchPins(): Promise<Pin[]> {
   return request('/api/pins');
 }
