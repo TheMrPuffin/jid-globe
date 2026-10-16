@@ -1,8 +1,9 @@
-// Decodes a JID as it is typed, e.g. "5GB12A" -> European / United Kingdom / 12 / A.
+// Decodes a JID as it is typed, e.g. "5GB123TXA" -> European / United Kingdom / 123 / TXA.
 import { countryFor, type Country } from './countries';
 import { regionFor, type Region } from './regions';
 
-export const JID_EXAMPLE = '5GB12A';
+export const JID_EXAMPLE = '5GB123TXA';
+const JID_LENGTH = 9;
 const SPECIAL_REGION = '7';
 
 export interface JidResult {
@@ -30,18 +31,18 @@ export function parseJid(input: string): JidResult {
   if (result.error && CALLSIGN.test(jid)) {
     result.error = `That looks like an amateur radio callsign, not a JID. A JID looks like ${JID_EXAMPLE}.`;
   }
-  result.valid = result.error === null && jid.length === 6;
+  result.valid = result.error === null && jid.length === JID_LENGTH;
   return result;
 }
 
 // Checks the first digit suits the country, e.g. the UK is in the European region (5),
-// so "1GB12A" must be a typo. Region 7 is for special stations and can be any country.
+// so "1GB123TXA" must be a typo. Region 7 is for special stations and can be any country.
 function regionMismatch(jid: string, region: Region, country: Country): string | null {
   const allowed = country.scoutRegions;
   if (region.digit === SPECIAL_REGION || allowed.length === 0 || allowed.includes(region.digit)) return null;
 
   const names = allowed.map((digit) => `${digit} (${regionFor(digit)!.name})`).join(' or ');
-  const suggestion = allowed[0] + jid.slice(1) + (jid.length < 6 ? '…' : '');
+  const suggestion = allowed[0] + jid.slice(1) + (jid.length < JID_LENGTH ? '…' : '');
   return `${country.name} is not in the ${region.name} region. Its JIDs start with ${names}. Did you mean ${suggestion}?`;
 }
 
@@ -61,14 +62,14 @@ function decode(jid: string, result: JidResult): string | null {
     if (wrongRegion) return wrongRegion;
   }
 
-  const bingo = jid.slice(3, 5);
-  if (!/^[0-9]*$/.test(bingo)) return 'Characters 4 and 5 are a two-digit number.';
-  if (bingo.length === 2) result.bingo = bingo;
+  const bingo = jid.slice(3, 6);
+  if (!/^[0-9]*$/.test(bingo)) return 'Characters 4 to 6 are a three-digit number.';
+  if (bingo.length === 3) result.bingo = bingo;
 
-  const suffix = jid.slice(5, 6);
-  if (!/^[A-Z0-9]?$/.test(suffix)) return 'The last character is a letter or a digit.';
-  if (suffix) result.suffix = suffix;
+  const suffix = jid.slice(6, 9);
+  if (!/^[A-Z0-9]*$/.test(suffix)) return 'The last 3 characters are letters or digits.';
+  if (suffix.length === 3) result.suffix = suffix;
 
-  if (jid.length > 6) return 'A JID is exactly 6 characters long.';
+  if (jid.length > JID_LENGTH) return `A JID is exactly ${JID_LENGTH} characters long.`;
   return null;
 }

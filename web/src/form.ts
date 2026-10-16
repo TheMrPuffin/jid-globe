@@ -145,7 +145,7 @@ export function setupForm(options: FormOptions) {
       { code: parsed.region?.digit, name: parsed.region?.name ?? '', waiting: 'Region' },
       { code: parsed.country?.code, name: parsed.country?.name ?? '', waiting: 'Country', flexible: true },
       { code: parsed.bingo ?? undefined, name: '', waiting: 'Number' },
-      { code: parsed.suffix ?? undefined, name: '', waiting: 'Letter' },
+      { code: parsed.suffix ?? undefined, name: '', waiting: 'Suffix' },
     ];
 
     decodeBox.replaceChildren(

@@ -21,7 +21,7 @@ describe('parseStation', () => {
 });
 
 function entry(station: string | null): Pin {
-  return { id: '1', jid: '5GB12A', lat: 0, lng: 0, placement: 'country', city: null, note: null, added_by: station, created_at: '' };
+  return { id: '1', jid: '5GB012AXA', lat: 0, lng: 0, placement: 'country', city: null, note: null, added_by: station, created_at: '' };
 }
 
 describe('stationOf', () => {
