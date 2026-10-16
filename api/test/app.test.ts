@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { buildApp, MAX_NEW_ENTRIES_PER_MINUTE } from '../src/app.js';
 import { openPinsDb } from '../src/db.js';
 
-const validPin = { jid: '5gb12a', lat: 54, lng: -2, placement: 'country', note: 'Hello from Leeds' };
+const validPin = { jid: '5gb012axa', lat: 54, lng: -2, placement: 'country', note: 'Hello from Leeds' };
 let app: FastifyInstance;
 
 beforeEach(async () => {
@@ -40,7 +40,7 @@ describe('pins API', () => {
   it('creates a pin and lists it', async () => {
     const created = await addPin(validPin);
     expect(created.statusCode).toBe(201);
-    expect(created.json()).toMatchObject({ jid: '5GB12A', placement: 'country', city: null });
+    expect(created.json()).toMatchObject({ jid: '5GB012AXA', placement: 'country', city: null });
 
     const list = await app.inject('/api/pins');
     expect(list.json()).toHaveLength(1);
@@ -48,7 +48,7 @@ describe('pins API', () => {
 
   it('rejects bad input', async () => {
     expect((await addPin({ ...validPin, jid: 'G4ABC' })).statusCode).toBe(400);
-    expect((await addPin({ ...validPin, jid: '1GB12A' })).statusCode).toBe(400); // UK is region 5
+    expect((await addPin({ ...validPin, jid: '1GB012AXA' })).statusCode).toBe(400); // UK is region 5
     expect((await addPin({ ...validPin, lat: 91 })).statusCode).toBe(400);
     expect((await addPin({ ...validPin, placement: 'moon' })).statusCode).toBe(400);
     expect((await addPin({ ...validPin, note: 'x'.repeat(121) })).statusCode).toBe(400);
@@ -106,11 +106,11 @@ describe('pins API', () => {
   it('moves every entry of a JID, but only with the passcode', async () => {
     await addPin(validPin);
     await addPin(validPin);
-    await addPin({ ...validPin, jid: '6BR44C' });
+    await addPin({ ...validPin, jid: '6BR044CXA' });
     const move = (headers: Record<string, string>) =>
       app.inject({
         method: 'PUT',
-        url: '/api/jids/5gb12a/place',
+        url: '/api/jids/5gb012axa/place',
         headers,
         payload: { lat: 53.8, lng: -1.55, placement: 'city', city: 'Leeds' },
       });
@@ -121,14 +121,14 @@ describe('pins API', () => {
     expect(moved.json()).toHaveLength(2);
 
     const pins = (await app.inject('/api/pins')).json() as { jid: string; city: string | null }[];
-    expect(pins.filter((p) => p.jid === '5GB12A').map((p) => p.city)).toEqual(['Leeds', 'Leeds']);
-    expect(pins.find((p) => p.jid === '6BR44C')?.city).toBeNull();
+    expect(pins.filter((p) => p.jid === '5GB012AXA').map((p) => p.city)).toEqual(['Leeds', 'Leeds']);
+    expect(pins.find((p) => p.jid === '6BR044CXA')?.city).toBeNull();
   });
 
   it('refuses to move a JID that is not in the logbook', async () => {
     const response = await app.inject({
       method: 'PUT',
-      url: '/api/jids/5GB12A/place',
+      url: '/api/jids/5GB012AXA/place',
       headers: { 'x-admin-passcode': 'secret' },
       payload: { lat: 1, lng: 1, placement: 'manual' },
     });
@@ -172,7 +172,7 @@ describe('pages', () => {
 });
 
 describe('submit lock', () => {
-  const pin = { jid: '5GB12A', lat: 54, lng: -2, placement: 'country' };
+  const pin = { jid: '5GB012AXA', lat: 54, lng: -2, placement: 'country' };
 
   async function lockedApp() {
     return buildApp({

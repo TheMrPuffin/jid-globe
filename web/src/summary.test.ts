@@ -9,14 +9,14 @@ function entry(jid: string, city: string | null = null, station: string | null =
 
 // Three UK JIDs (one entered three times), one Brazilian JID entered twice, one Japanese JID.
 const pins = [
-  entry('5GB12A', 'Leeds'),
-  entry('5GB12A', 'Leeds'),
-  entry('5GB12A', 'Leeds'),
-  entry('5GB34B'),
-  entry('5GB56C'),
-  entry('6BR44C', 'Rio de Janeiro'),
-  entry('6BR44C', 'Rio de Janeiro'),
-  entry('3JP01A', 'Tokyo'),
+  entry('5GB012AXA', 'Leeds'),
+  entry('5GB012AXA', 'Leeds'),
+  entry('5GB012AXA', 'Leeds'),
+  entry('5GB034BXA'),
+  entry('5GB056CXA'),
+  entry('6BR044CXA', 'Rio de Janeiro'),
+  entry('6BR044CXA', 'Rio de Janeiro'),
+  entry('3JP001AXA', 'Tokyo'),
 ];
 
 describe('summarise', () => {
@@ -43,19 +43,19 @@ describe('summarise', () => {
 
   it('puts the most-entered JIDs first', () => {
     expect(summary.mostSeen.slice(0, 2)).toEqual([
-      { jid: '5GB12A', times: 3, place: 'Leeds, United Kingdom' },
-      { jid: '6BR44C', times: 2, place: 'Rio de Janeiro, Brazil' },
+      { jid: '5GB012AXA', times: 3, place: 'Leeds, United Kingdom' },
+      { jid: '6BR044CXA', times: 2, place: 'Rio de Janeiro, Brazil' },
     ]);
     expect(summary.mostSeen).toHaveLength(5);
   });
 
   it('counts entries per station, with unlabelled entries as "Unknown"', () => {
     const tagged = summarise([
-      entry('5GB12A', null, 'PC01'),
-      entry('5GB12A', null, 'PC01'),
-      entry('5GB34B', null, 'PC01'),
-      entry('6BR44C', null, 'PC02'),
-      entry('3JP01A'),
+      entry('5GB012AXA', null, 'PC01'),
+      entry('5GB012AXA', null, 'PC01'),
+      entry('5GB034BXA', null, 'PC01'),
+      entry('6BR044CXA', null, 'PC02'),
+      entry('3JP001AXA'),
     ]);
     expect(tagged.stations).toEqual([
       { name: 'PC01', entries: 3, jids: 2 },

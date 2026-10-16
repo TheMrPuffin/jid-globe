@@ -8,7 +8,7 @@ function entry(id: string, jid: string): Pin {
 
 describe('buildFeed', () => {
   // Newest first, as the store keeps them: "d" is the latest entry.
-  const pins = [entry('d', '5GB12A'), entry('c', '6BR44C'), entry('b', '5GB12A'), entry('a', '5GB12A')];
+  const pins = [entry('d', '5GB012AXA'), entry('c', '6BR044CXA'), entry('b', '5GB012AXA'), entry('a', '5GB012AXA')];
 
   it('keeps the entries newest first, one line each', () => {
     expect(buildFeed(pins).map((item) => item.pin.id)).toEqual(['d', 'c', 'b', 'a']);

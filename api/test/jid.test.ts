@@ -4,13 +4,14 @@ import { checkJid, normalizeJid } from '../src/jid.js';
 
 describe('normalizeJid', () => {
   it('accepts a valid JID and uppercases it', () => {
-    expect(normalizeJid('5gb12a')).toBe('5GB12A');
-    expect(normalizeJid(' 3AU079 ')).toBe('3AU079');
+    expect(normalizeJid('5gb123txa')).toBe('5GB123TXA');
+    expect(normalizeJid('5gb012axa')).toBe('5GB012AXA');
+    expect(normalizeJid(' 3AU0079XA ')).toBe('3AU0079XA');
   });
 
   it('rejects a region digit outside 1-7', () => {
-    expect(normalizeJid('9ZZ12A')).toBeNull();
-    expect(normalizeJid('0GB12A')).toBeNull();
+    expect(normalizeJid('9ZZ012AXA')).toBeNull();
+    expect(normalizeJid('0GB012AXA')).toBeNull();
   });
 
   it('rejects amateur radio callsigns', () => {
@@ -19,29 +20,30 @@ describe('normalizeJid', () => {
   });
 
   it('rejects the wrong length and non-strings', () => {
-    expect(normalizeJid('5GB12')).toBeNull();
-    expect(normalizeJid('5GB12AB')).toBeNull();
+    expect(normalizeJid('5GB123TX')).toBeNull();
+    expect(normalizeJid('5GB12A')).toBeNull(); // the old 6-character format
+    expect(normalizeJid('5GB123TXAB')).toBeNull();
     expect(normalizeJid(512)).toBeNull();
   });
 });
 
 describe('checkJid', () => {
   it('accepts a JID whose first digit suits its country', () => {
-    expect(checkJid('5gb12a')).toEqual({ ok: true, jid: '5GB12A' });
-    for (const jid of ['1KE01A', '2EG01A', '3AU01A', '6BR01A', '4UA01A', '5UA01A', '7GB12A']) {
+    expect(checkJid('5gb012axa')).toEqual({ ok: true, jid: '5GB012AXA' });
+    for (const jid of ['1KE001AXA', '2EG001AXA', '3AU001AXA', '6BR001AXA', '4UA001AXA', '5UA001AXA', '7GB012AXA']) {
       expect(checkJid(jid).ok, jid).toBe(true);
     }
   });
 
   it('refuses a region that does not match the country', () => {
-    const result = checkJid('1GB12A');
+    const result = checkJid('1GB012AXA');
     expect(result).toMatchObject({ ok: false });
     expect(result.ok ? '' : result.error).toMatch(/United Kingdom is not in region 1.*start with 5/);
-    expect(checkJid('3BR44C').ok).toBe(false);
+    expect(checkJid('3BR044CXA').ok).toBe(false);
   });
 
   it('refuses an unknown country code and a badly shaped JID', () => {
-    expect(checkJid('5ZZ12A').ok).toBe(false);
+    expect(checkJid('5ZZ012AXA').ok).toBe(false);
     expect(checkJid('G4ABC').ok).toBe(false);
   });
 });

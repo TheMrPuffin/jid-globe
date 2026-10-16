@@ -8,8 +8,8 @@ function entry(id: string, jid: string): Pin {
 
 describe('groupByJid', () => {
   it('collects repeat entries of a JID into one group, keeping their order', () => {
-    const groups = groupByJid([entry('a', '5GB12A'), entry('b', '6BR44C'), entry('c', '5GB12A')]);
-    expect(groups.map((g) => g.jid)).toEqual(['5GB12A', '6BR44C']);
+    const groups = groupByJid([entry('a', '5GB012AXA'), entry('b', '6BR044CXA'), entry('c', '5GB012AXA')]);
+    expect(groups.map((g) => g.jid)).toEqual(['5GB012AXA', '6BR044CXA']);
     expect(groups[0].entries.map((e) => e.id)).toEqual(['a', 'c']);
     expect(groups[1].entries).toHaveLength(1);
   });
@@ -21,6 +21,6 @@ describe('groupByJid', () => {
 
 describe('countDifferentJids', () => {
   it('counts each JID once however often it was entered', () => {
-    expect(countDifferentJids([entry('a', '5GB12A'), entry('b', '6BR44C'), entry('c', '5GB12A')])).toBe(2);
+    expect(countDifferentJids([entry('a', '5GB012AXA'), entry('b', '6BR044CXA'), entry('c', '5GB012AXA')])).toBe(2);
   });
 });

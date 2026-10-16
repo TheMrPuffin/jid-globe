@@ -18,11 +18,11 @@ globe. Someone types a code on one screen and it lands on every other screen, li
 ## What it does
 
 **Every JID becomes a pin.** Type a code and it is decoded as you type: region, country, number
-and letter. The globe flies to the country, and you can narrow the pin down to a city or town,
+and suffix. The globe flies to the country, and you can narrow the pin down to a city or town,
 or tap an exact spot.
 
 **It catches mistakes.** The first digit has to suit the country. The UK is in region 5, so
-`1GB12A` is refused with a suggestion of what was probably meant. Region 7, for special
+`1GB123TXA` is refused with a suggestion of what was probably meant. Region 7, for special
 stations, is accepted with any country. The server makes the same check as the page.
 
 **Everyone sees it happen.** A new pin is announced on every device: rings pulse from it, a

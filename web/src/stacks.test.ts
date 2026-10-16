@@ -3,7 +3,7 @@ import type { Pin } from './api';
 import { stackPins } from './stacks';
 
 function pin(id: string, lat: number, lng: number): Pin {
-  return { id, jid: '5GB12A', lat, lng, placement: 'city', city: null, note: null, added_by: null, created_at: '' };
+  return { id, jid: '5GB012AXA', lat, lng, placement: 'city', city: null, note: null, added_by: null, created_at: '' };
 }
 
 describe('stackPins', () => {
