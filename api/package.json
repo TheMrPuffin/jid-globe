@@ -16,7 +16,7 @@
     "@fastify/rate-limit": "11.2.1",
     "@fastify/static": "10.1.6",
     "better-sqlite3": "13.0.3",
-    "fastify": "5.12.5",
+    "fastify": "5.12.7",
     "world-countries": "5.1.0"
   },
   "devDependencies": {
@@ -24,6 +24,6 @@
     "@types/node": "24.19.2",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
-    "vitest": "5.0.3"
+    "vitest": "5.0.5"
   }
 }
