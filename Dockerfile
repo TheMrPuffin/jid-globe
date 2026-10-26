@@ -1,5 +1,5 @@
 # ---- deps: all npm packages, plus compilers in case better-sqlite3 must build from source
-FROM node:24.21.0-bookworm-slim AS deps
+FROM node:24.22.1-bookworm-slim AS deps
 RUN apt-get update \
  && apt-get install -y --no-install-recommends python3 make g++ \
  && rm -rf /var/lib/apt/lists/*
@@ -22,7 +22,7 @@ RUN npm run build -w api \
  && npm prune --omit=dev
 
 # ---- final image: just Node, the compiled app and the data
-FROM node:24.21.0-bookworm-slim
+FROM node:24.22.1-bookworm-slim
 # The sqlite3 command-line tool is only here for the backup command in the README.
 # `apt-get upgrade` brings in the security fixes Debian has released since the Node image
 # was made. npm, yarn and corepack come with that image but the running app never uses
